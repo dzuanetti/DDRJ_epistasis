@@ -1,0 +1,52 @@
+rm(list=ls())
+#
+caminho<-"/Users/Daiane/Documents/Daiane/Projetos/01_QTL_epistasia/12864_2016_3342_MOESM10_ESM/"
+dados<-matrix(scan(file=paste(caminho,"dados_marcio_convertido.txt",sep="")),nrow=300)
+mapa<-read.table(paste(caminho,"mapa_Marcio.txt",sep=""),h=F)
+#
+loc.marc<-mapa[,2]
+const<-0
+for (i in 2:nrow(mapa)){
+  if (mapa[i,3]>mapa[i-1,3]) const<-loc.marc[i-1]+100
+  loc.marc[i]<-loc.marc[i]+const}
+#
+loc.marc<-loc.marc/100
+gen.marc<-dados[,-1]
+#
+sai<-c(6,10,13,20,21,22,27,30,38,40,50,58,65,66,71,75,77,79,80,93,98,99,100,102) ### correlação de 1 com outros SNPS
+loc.marc<-loc.marc[-sai]
+gen.marc<-gen.marc[,-sai] #### OK
+#
+set.seed(100)
+QTLs<-sort(sample(1:ncol(gen.marc),10,replace=F))
+loc.marc[QTLs]
+#
+set.seed(10)
+mi.verd<-20
+sigma2.verd<-0.25
+ef.adi.verd<-c(-0.60,0.90,0.25,-0.40,0.40)
+ef.dom.verd<-c(0.30,0.05,-0.25,0.15,-0.15)
+#ef.epis.verd<-round(runif(5,-1.3,1.3),2)
+ef.epis.verd<-c(0.02,-0.19,-0.50,0.70,-1.08)
+#
+gen.QTL<-gen.marc[,QTLs]
+res<-rnorm(nrow(gen.marc),0,sqrt(sigma2.verd))
+#
+fenot<-mi.verd+
+  ef.adi.verd[1]*gen.QTL[,3]+ef.dom.verd[1]*(0.5-abs(gen.QTL[,3]))+
+  ef.adi.verd[2]*gen.QTL[,5]+ef.dom.verd[2]*(0.5-abs(gen.QTL[,5]))+
+  ef.adi.verd[3]*gen.QTL[,7]+ef.dom.verd[3]*(0.5-abs(gen.QTL[,7]))+
+  ef.adi.verd[4]*gen.QTL[,8]+ef.dom.verd[4]*(0.5-abs(gen.QTL[,8]))+
+  ef.adi.verd[5]*gen.QTL[,9]+ef.dom.verd[5]*(0.5-abs(gen.QTL[,9]))+
+  ef.epis.verd[1]*(gen.QTL[,2]*(0.5-abs(gen.QTL[,6])))+
+  ef.epis.verd[2]*((0.5-abs(gen.QTL[,2]))*(0.5-abs(gen.QTL[,5])))+
+  ef.epis.verd[3]*(gen.QTL[,4]*gen.QTL[,10])+
+  ef.epis.verd[4]*((0.5-abs(gen.QTL[,1]))*gen.QTL[,5])+
+  ef.epis.verd[5]*(gen.QTL[,5]*(0.5-abs(gen.QTL[,9])))+
+  res
+#
+plot(density(fenot))
+#
+dados<-cbind(fenot,gen.marc[,-QTLs])
+loc.marc<-loc.marc[-QTLs]
+#
